@@ -8,9 +8,16 @@ create table if not exists public.cms_admins (
 create table if not exists public.menu_categories (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
+  menu_type text not null default 'coffee' check (menu_type in ('coffee', 'non-coffee', 'dessert')),
   name_ko text not null,
   name_en text,
   description text,
+  page_title text,
+  page_description text,
+  layout_variant text not null default 'list' check (layout_variant in ('list', 'split-banners')),
+  background_color text not null default '#EFF4F5',
+  banner_image_url text,
+  banner_image_alt text,
   sort_order integer not null default 0,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -23,18 +30,31 @@ create table if not exists public.menu_items (
   code text,
   name_ko text not null,
   name_en text,
+  subtitle text,
   summary text,
   description text,
+  detail_title text,
+  detail_body text,
+  detail_highlight text,
   price numeric(8, 1) not null default 0,
   flavor_notes text[] not null default '{}',
+  flavor_notes_en text[] not null default '{}',
   origin text,
   farm text,
   altitude text,
   variety text,
   processing text,
   roasting_point text,
+  main_flavor_color text,
+  sub_flavor_color text,
   image_url text,
+  detail_image_url text,
+  position_image_url text,
   badge text,
+  badges text[] not null default '{}',
+  status text not null default 'available' check (status in ('available', 'soldout', 'coming', 'limited')),
+  display_code boolean not null default true,
+  serve_note text,
   sort_order integer not null default 0,
   is_published boolean not null default true,
   created_at timestamptz not null default now(),
@@ -44,6 +64,30 @@ create table if not exists public.menu_items (
 
 create index if not exists menu_items_category_order_idx on public.menu_items(category_id, sort_order);
 create index if not exists menu_items_published_idx on public.menu_items(is_published);
+
+alter table public.menu_categories add column if not exists menu_type text not null default 'coffee';
+alter table public.menu_categories add column if not exists page_title text;
+alter table public.menu_categories add column if not exists page_description text;
+alter table public.menu_categories add column if not exists layout_variant text not null default 'list';
+alter table public.menu_categories add column if not exists background_color text not null default '#EFF4F5';
+alter table public.menu_categories add column if not exists banner_image_url text;
+alter table public.menu_categories add column if not exists banner_image_alt text;
+
+alter table public.menu_items add column if not exists subtitle text;
+alter table public.menu_items add column if not exists detail_title text;
+alter table public.menu_items add column if not exists detail_body text;
+alter table public.menu_items add column if not exists detail_highlight text;
+alter table public.menu_items add column if not exists flavor_notes_en text[] not null default '{}';
+alter table public.menu_items add column if not exists main_flavor_color text;
+alter table public.menu_items add column if not exists sub_flavor_color text;
+alter table public.menu_items add column if not exists detail_image_url text;
+alter table public.menu_items add column if not exists position_image_url text;
+alter table public.menu_items add column if not exists badges text[] not null default '{}';
+alter table public.menu_items add column if not exists status text not null default 'available';
+alter table public.menu_items add column if not exists display_code boolean not null default true;
+alter table public.menu_items add column if not exists serve_note text;
+
+create index if not exists menu_categories_type_order_idx on public.menu_categories(menu_type, sort_order);
 
 create or replace function public.set_updated_at()
 returns trigger

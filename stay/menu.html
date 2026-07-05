@@ -8,29 +8,52 @@
     <script src="config.js"></script>
     <script type="module" src="assets/menu.js"></script>
   </head>
-  <body class="public-page">
-    <header class="site-header">
-      <a class="brand" href="menu.html" aria-label="Stay With Coffee menu">
-        <span class="brand-mark">SWC</span>
-        <span>
-          <strong>Stay With Coffee</strong>
-          <small>Online Menu</small>
-        </span>
+  <body class="menu-board-page">
+    <header class="menu-header">
+      <a class="menu-logo" href="menu.html?type=coffee" aria-label="Stay With Coffee menu">
+        <span>SWC</span>
       </a>
-      <a class="ghost-link" href="admin.html">Admin</a>
+      <nav class="menu-primary-nav" aria-label="메뉴 종류">
+        <a data-menu-type-link="coffee" href="menu.html?type=coffee">COFFEE</a>
+        <a data-menu-type-link="non-coffee" href="menu.html?type=non-coffee">NON-COFFEE</a>
+        <a data-menu-type-link="dessert" href="menu.html?type=dessert">DESSERT</a>
+      </nav>
+      <nav class="menu-secondary-nav" aria-label="도움말">
+        <a href="menu.html?type=coffee">커피 미각여행</a>
+        <a href="menu.html?type=coffee">나만의 커피 취향 탐색</a>
+        <a class="admin-entry" href="admin.html">Admin</a>
+      </nav>
+      <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
     </header>
 
-    <main>
-      <section class="menu-hero">
-        <p class="eyebrow">Specialty Coffee Menu</p>
-        <h1>스테이위드커피 온라인 메뉴</h1>
-        <p>가격 단위는 천원이며, 표시된 메뉴는 현재 판매 중인 항목입니다.</p>
-      </section>
+    <aside id="mobileMenu" class="mobile-menu hidden">
+      <a href="menu.html?type=coffee">COFFEE</a>
+      <a href="menu.html?type=non-coffee">NON-COFFEE</a>
+      <a href="menu.html?type=dessert">DESSERT</a>
+      <a href="admin.html">Admin</a>
+    </aside>
 
-      <nav id="categoryTabs" class="category-tabs" aria-label="메뉴 카테고리"></nav>
-      <section id="menuContent" class="menu-content" aria-live="polite">
+    <main class="menu-board">
+      <section id="menuContent" aria-live="polite">
         <div class="empty-state">메뉴를 불러오는 중입니다.</div>
       </section>
     </main>
+
+    <footer class="menu-footer">
+      <a class="language-toggle" href="menu.html"><em>KOR</em><span>ENG</span></a>
+      <p><strong>SWC</strong> COFFEE ROASTERS <span>|</span> SINCE 2010</p>
+    </footer>
+
+    <dialog id="itemDialog" class="menu-detail-dialog">
+      <form method="dialog">
+        <div class="detail-titlebar">
+          <h2 id="detailTitle"></h2>
+          <button type="button" id="detailCloseButton" aria-label="닫기">×</button>
+        </div>
+        <div id="detailBody" class="detail-body"></div>
+      </form>
+    </dialog>
   </body>
 </html>

@@ -168,7 +168,7 @@ function renderCategories() {
         <button class="category-row ${active}" type="button" data-category-id="${category.id}">
           <span>
             <strong>${escapeHtml(category.name_ko)}</strong>
-            <small>${escapeHtml(category.name_en || category.slug)}</small>
+            <small>${escapeHtml([category.menu_type, category.name_en || category.slug].filter(Boolean).join(" · "))}</small>
           </span>
           <em>${category.is_active ? "노출" : "숨김"}</em>
         </button>
@@ -235,6 +235,7 @@ async function onAddCategory() {
   const slug = name.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").replace(/^-|-$/g, "");
   const { error } = await supabase.from("menu_categories").insert({
     slug,
+    menu_type: "coffee",
     name_ko: name,
     name_en: name.toUpperCase(),
     sort_order: state.categories.length + 1
@@ -256,13 +257,17 @@ function openItemDialog(itemId = null) {
   if (item) {
     for (const [key, value] of Object.entries(item)) {
       if (!itemForm.elements[key]) continue;
-      if (key === "flavor_notes") itemForm.elements[key].value = joinNotes(value);
+      if (["flavor_notes", "flavor_notes_en", "badges"].includes(key)) itemForm.elements[key].value = joinNotes(value);
       else if (itemForm.elements[key].type === "checkbox") itemForm.elements[key].checked = Boolean(value);
       else itemForm.elements[key].value = value ?? "";
     }
   } else {
     itemForm.elements.category_id.value = state.selectedCategoryId ?? state.categories[0]?.id ?? "";
     itemForm.elements.is_published.checked = true;
+    itemForm.elements.display_code.checked = true;
+    itemForm.elements.status.value = "available";
+    itemForm.elements.main_flavor_color.value = "#456d75";
+    itemForm.elements.sub_flavor_color.value = "#78a9ac";
   }
 
   deleteItemButton.classList.toggle("hidden", !item);
@@ -279,17 +284,28 @@ async function onSaveItem(event) {
     code: nullable(values.code),
     name_ko: values.name_ko,
     name_en: nullable(values.name_en),
+    subtitle: nullable(values.subtitle),
     price: Number(values.price),
+    status: values.status || "available",
     roasting_point: nullable(values.roasting_point),
     summary: nullable(values.summary),
     description: nullable(values.description),
+    detail_title: nullable([values.code, values.name_ko].filter(Boolean).join(". ")),
+    detail_body: nullable(values.description),
+    detail_highlight: nullable(values.detail_highlight),
     origin: nullable(values.origin),
     farm: nullable(values.farm),
     altitude: nullable(values.altitude),
     variety: nullable(values.variety),
     processing: nullable(values.processing),
     image_url: nullable(values.image_url),
+    detail_image_url: nullable(values.detail_image_url),
+    main_flavor_color: nullable(values.main_flavor_color),
+    sub_flavor_color: nullable(values.sub_flavor_color),
     flavor_notes: splitNotes(values.flavor_notes),
+    flavor_notes_en: splitNotes(values.flavor_notes_en),
+    badges: splitNotes(values.badges),
+    display_code: itemForm.elements.display_code.checked,
     is_published: itemForm.elements.is_published.checked
   };
 

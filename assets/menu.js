@@ -1,105 +1,248 @@
 import { formatPrice, getSupabase } from "./supabase-client.js";
 
-const tabs = document.querySelector("#categoryTabs");
+const MENU_TYPES = ["coffee", "non-coffee", "dessert"];
+const PAGE_LABELS = {
+  coffee: "COFFEE",
+  "non-coffee": "NON-COFFEE",
+  dessert: "DESSERT"
+};
+
 const content = document.querySelector("#menuContent");
+const detailDialog = document.querySelector("#itemDialog");
+const detailTitle = document.querySelector("#detailTitle");
+const detailBody = document.querySelector("#detailBody");
+const detailCloseButton = document.querySelector("#detailCloseButton");
+const mobileMenuButton = document.querySelector("#mobileMenuButton");
+const mobileMenu = document.querySelector("#mobileMenu");
+
+let currentItems = [];
 
 init();
 
 async function init() {
+  const menuType = getMenuType();
+  document.body.dataset.menuType = menuType;
+  document.querySelectorAll("[data-menu-type-link]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.menuTypeLink === menuType);
+  });
+
+  mobileMenuButton.addEventListener("click", () => {
+    mobileMenu.classList.toggle("hidden");
+  });
+  detailCloseButton.addEventListener("click", () => closeDetail());
+  detailDialog.addEventListener("click", (event) => {
+    if (event.target === detailDialog) closeDetail();
+  });
+  detailDialog.addEventListener("close", () => document.body.classList.remove("no-scroll"));
+
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from("menu_categories")
-      .select("id, slug, name_ko, name_en, description, menu_items(*)")
+      .select("*, menu_items(*)")
       .eq("is_active", true)
+      .eq("menu_type", menuType)
       .order("sort_order", { ascending: true })
       .order("sort_order", { referencedTable: "menu_items", ascending: true });
 
     if (error) throw error;
 
-    const categories = (data ?? [])
-      .map((category) => ({
-        ...category,
-        menu_items: (category.menu_items ?? []).filter((item) => item.is_published)
+    const sections = (data ?? [])
+      .map((section) => ({
+        ...section,
+        menu_items: (section.menu_items ?? []).filter((item) => item.is_published)
       }))
-      .filter((category) => category.menu_items.length > 0);
+      .filter((section) => section.menu_items.length > 0);
 
-    renderTabs(categories);
-    renderMenu(categories);
+    currentItems = sections.flatMap((section) => section.menu_items);
+    renderMenu(menuType, sections);
   } catch (error) {
     content.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
   }
 }
 
-function renderTabs(categories) {
-  tabs.innerHTML = categories
-    .map(
-      (category) =>
-        `<a href="#${category.slug}">${escapeHtml(category.name_en || category.name_ko)}</a>`
-    )
-    .join("");
+function getMenuType() {
+  const requested = new URLSearchParams(window.location.search).get("type");
+  return MENU_TYPES.includes(requested) ? requested : "coffee";
 }
 
-function renderMenu(categories) {
-  if (!categories.length) {
+function renderMenu(menuType, sections) {
+  if (!sections.length) {
     content.innerHTML = '<div class="empty-state">현재 노출 중인 메뉴가 없습니다.</div>';
     return;
   }
 
-  content.innerHTML = categories
-    .map(
-      (category) => `
-        <section id="${escapeHtml(category.slug)}" class="menu-section">
-          <div class="section-heading">
-            <p class="eyebrow">${escapeHtml(category.name_en || "")}</p>
-            <h2>${escapeHtml(category.name_ko)}</h2>
-            ${category.description ? `<p>${escapeHtml(category.description)}</p>` : ""}
-          </div>
-          <div class="menu-list">
-            ${category.menu_items.map(renderItem).join("")}
-          </div>
+  const first = sections[0];
+  const pageTitle = first.page_title || PAGE_LABELS[menuType];
+  const pageDescription = first.page_description || first.description || "";
+
+  content.innerHTML = `
+    <div class="${menuType === "coffee" ? "menu-stack" : "menu-split"}">
+      <div class="menu-main-col">
+        <section class="board-title">
+          <h1>${escapeHtml(pageTitle)}</h1>
+          ${pageDescription ? `<p>${escapeHtml(pageDescription)}</p>` : ""}
         </section>
-      `
-    )
-    .join("");
+        ${sections.map(renderSection).join("")}
+      </div>
+      ${menuType === "coffee" ? "" : renderBanners(sections)}
+    </div>
+  `;
+
+  content.querySelectorAll("[data-item-id]").forEach((button) => {
+    button.addEventListener("click", () => openDetail(button.dataset.itemId));
+  });
 }
 
-function renderItem(item) {
-  const notes = Array.isArray(item.flavor_notes) ? item.flavor_notes : [];
+function renderSection(section) {
+  return `
+    <section class="board-section">
+      <h2>${escapeHtml(section.name_ko)}</h2>
+      <div class="board-items" style="background-color: ${escapeAttribute(section.background_color || "#EFF4F5")}">
+        <div class="board-columns">
+          ${splitItems(section.menu_items).map((items) => `<ul>${items.map(renderMenuItem).join("")}</ul>`).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function splitItems(items) {
+  if (items.length < 7) return [items];
+  const midpoint = Math.ceil(items.length / 2);
+  return [items.slice(0, midpoint), items.slice(midpoint)];
+}
+
+function renderMenuItem(item) {
+  const title = [item.display_code ? item.code : "", item.name_ko].filter(Boolean).join(". ");
+  const soldout = item.status === "soldout";
+  const titleHtml = soldout ? `<del>${escapeHtml(title)}</del>` : escapeHtml(title);
+
+  return `
+    <li>
+      <button class="board-item" type="button" data-item-id="${item.id}">
+        <span class="flavor-bars" aria-hidden="true">
+          <i style="background:${escapeAttribute(item.main_flavor_color || "#456D75")}"></i>
+          <i style="background:${escapeAttribute(item.sub_flavor_color || item.main_flavor_color || "#78A9AC")}"></i>
+        </span>
+        <span class="item-copy">
+          <strong>${titleHtml}${renderBadges(item)}</strong>
+          ${item.subtitle ? `<small>${escapeHtml(item.subtitle)}</small>` : ""}
+          ${item.summary ? `<em>${escapeHtml(item.summary)}</em>` : ""}
+        </span>
+        <span class="item-price">${formatPrice(item.price)}</span>
+      </button>
+    </li>
+  `;
+}
+
+function renderBadges(item) {
+  const badges = Array.isArray(item.badges) ? item.badges : [];
+  const labels = {
+    best: "BEST",
+    limited: "LIMITED",
+    signature: "SIGNATURE",
+    onlyhot: "ONLY HOT",
+    onlyice: "ONLY ICE"
+  };
+  const allBadges = [...badges];
+  if (item.status === "soldout") allBadges.push("SOLD OUT");
+  if (item.status === "coming") allBadges.push("COMING");
+
+  return allBadges.length
+    ? ` ${allBadges.map((badge) => `<b class="menu-badge">${escapeHtml(labels[badge] || badge)}</b>`).join("")}`
+    : "";
+}
+
+function renderBanners(sections) {
+  const banners = sections.filter((section) => section.banner_image_url);
+  if (!banners.length) return "";
+
+  return `
+    <aside class="menu-banner-col">
+      ${banners
+        .map(
+          (section) => `
+            <figure>
+              <img src="${escapeAttribute(section.banner_image_url)}" alt="${escapeAttribute(section.banner_image_alt || section.name_ko)}" loading="lazy" />
+            </figure>
+          `
+        )
+        .join("")}
+    </aside>
+  `;
+}
+
+function openDetail(itemId) {
+  const item = currentItems.find((entry) => entry.id === itemId);
+  if (!item) return;
+
+  detailTitle.textContent = item.detail_title || [item.display_code ? item.code : "", item.name_ko].filter(Boolean).join(". ");
+  detailBody.innerHTML = renderDetail(item);
+  document.body.classList.add("no-scroll");
+  detailDialog.showModal();
+}
+
+function closeDetail() {
+  detailDialog.close();
+  document.body.classList.remove("no-scroll");
+}
+
+function renderDetail(item) {
   const meta = [
-    ["REGION", item.origin],
-    ["FARM", item.farm],
-    ["ALTITUDE", item.altitude],
-    ["VARIETY", item.variety],
-    ["PROCESSING", item.processing]
+    ["REGION 원산지", item.origin],
+    ["FARM 농장/FARMER 농장주", item.farm],
+    ["ALTITUDE 고도", item.altitude],
+    ["VARIETY 품종", item.variety],
+    ["PROCESSING 가공법", item.processing]
   ].filter(([, value]) => value);
 
   return `
-    <article class="menu-card">
-      ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="" loading="lazy" />` : ""}
-      <div class="menu-card-body">
-        <div class="menu-card-title">
-          <div>
-            <span class="menu-code">${escapeHtml(item.code || "")}</span>
-            <h3>${escapeHtml(item.name_ko)}</h3>
-            ${item.name_en ? `<p>${escapeHtml(item.name_en)}</p>` : ""}
-          </div>
-          <strong>${formatPrice(item.price)}</strong>
+    <article class="detail-content" style="--main-flavor:${escapeAttribute(item.main_flavor_color || "#456D75")}; --sub-flavor:${escapeAttribute(item.sub_flavor_color || "#78A9AC")}">
+      ${item.detail_image_url || item.image_url ? `<img class="detail-hero" src="${escapeAttribute(item.detail_image_url || item.image_url)}" alt="" />` : ""}
+      <div class="detail-text">
+        ${item.description ? `<p>${escapeMultiline(item.description)}</p>` : ""}
+        ${item.detail_body && item.detail_body !== item.description ? `<p>${escapeMultiline(item.detail_body)}</p>` : ""}
+        ${item.detail_highlight ? `<strong class="color-txt">${escapeMultiline(item.detail_highlight)}</strong>` : ""}
+      </div>
+      ${
+        meta.length
+          ? `<ul class="detail-list detail-list-primary">${meta
+              .map(([label, value]) => `<li><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></li>`)
+              .join("")}</ul>`
+          : ""
+      }
+      <h3>SWC FLAVOR COLOR SYSTEM</h3>
+      <div class="flavor-system">
+        <div class="flavor-position" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <i></i>
         </div>
-        ${item.summary ? `<p class="summary">${escapeHtml(item.summary)}</p>` : ""}
-        ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
-        ${notes.length ? `<div class="chips">${notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("")}</div>` : ""}
-        ${item.roasting_point ? `<p class="roast">ROASTING POINT <b>${escapeHtml(item.roasting_point)}</b></p>` : ""}
-        ${
-          meta.length
-            ? `<dl class="meta-list">${meta
-                .map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`)
-                .join("")}</dl>`
-            : ""
-        }
+        <ul class="detail-list">
+          ${item.roasting_point ? `<li><strong>ROASTING POINT 배전도</strong><span>${escapeHtml(item.roasting_point)}</span></li>` : ""}
+          ${renderFlavorDetail(item)}
+        </ul>
       </div>
     </article>
   `;
+}
+
+function renderFlavorDetail(item) {
+  const ko = Array.isArray(item.flavor_notes) ? item.flavor_notes.join(", ") : "";
+  const en = Array.isArray(item.flavor_notes_en) ? item.flavor_notes_en.join(", ") : "";
+  if (!ko && !en) return "";
+
+  return `
+    <li>
+      <strong>FLAVOR 향미</strong>
+      <span>${escapeHtml(en)}${en && ko ? "<br />" : ""}${escapeHtml(ko)}</span>
+    </li>
+  `;
+}
+
+function escapeMultiline(value) {
+  return escapeHtml(value).replaceAll("\n", "<br />");
 }
 
 function escapeHtml(value) {
