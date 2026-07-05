@@ -5,7 +5,8 @@ const state = {
   categories: [],
   items: [],
   selectedCategoryId: null,
-  editingItemId: null
+  editingItemId: null,
+  isAdmin: false
 };
 
 const loginPanel = document.querySelector("#loginPanel");
@@ -20,6 +21,8 @@ const itemsTitle = document.querySelector("#itemsTitle");
 const itemCount = document.querySelector("#itemCount");
 const addCategoryButton = document.querySelector("#addCategoryButton");
 const newItemButton = document.querySelector("#newItemButton");
+const adminToolbar = document.querySelector("#adminToolbar");
+const adminGrid = document.querySelector("#adminGrid");
 const setupPanel = document.querySelector("#setupPanel");
 const setupForm = document.querySelector("#setupForm");
 const setupMessage = document.querySelector("#setupMessage");
@@ -121,6 +124,10 @@ function updateAuthUI(isSignedIn) {
   loginPanel.classList.toggle("hidden", isSignedIn);
   cmsPanel.classList.toggle("hidden", !isSignedIn);
   logoutButton.classList.toggle("hidden", !isSignedIn);
+  if (!isSignedIn) {
+    state.isAdmin = false;
+    applyAdminAccess();
+  }
 }
 
 async function loadAll() {
@@ -142,7 +149,15 @@ async function loadAll() {
 
 async function renderSetupPanel() {
   const { data, error } = await supabase.rpc("is_cms_admin");
-  setupPanel.classList.toggle("hidden", Boolean(data) || Boolean(error));
+  state.isAdmin = Boolean(data) && !error;
+  setupPanel.classList.toggle("hidden", state.isAdmin || Boolean(error));
+  applyAdminAccess();
+  if (error) showError(error);
+}
+
+function applyAdminAccess() {
+  adminToolbar.classList.toggle("hidden", !state.isAdmin);
+  adminGrid.classList.toggle("hidden", !state.isAdmin);
 }
 
 function renderCategories() {
@@ -213,6 +228,7 @@ function renderItemRow(item, index) {
 }
 
 async function onAddCategory() {
+  if (!ensureAdmin()) return;
   const name = window.prompt("카테고리 이름을 입력하세요. 예: COFFEE");
   if (!name) return;
 
@@ -229,6 +245,7 @@ async function onAddCategory() {
 }
 
 function openItemDialog(itemId = null) {
+  if (!ensureAdmin()) return;
   const item = state.items.find((entry) => entry.id === itemId);
   state.editingItemId = itemId;
   itemForm.reset();
@@ -254,6 +271,7 @@ function openItemDialog(itemId = null) {
 
 async function onSaveItem(event) {
   event.preventDefault();
+  if (!ensureAdmin()) return;
   const formData = new FormData(itemForm);
   const values = Object.fromEntries(formData.entries());
   const payload = {
@@ -290,6 +308,7 @@ async function onSaveItem(event) {
 }
 
 async function onDeleteItem() {
+  if (!ensureAdmin()) return;
   if (!state.editingItemId || !window.confirm("이 메뉴를 삭제할까요?")) return;
   const { error } = await supabase.from("menu_items").delete().eq("id", state.editingItemId);
   if (error) return showError(error);
@@ -298,12 +317,14 @@ async function onDeleteItem() {
 }
 
 async function updateItem(id, payload) {
+  if (!ensureAdmin()) return;
   const { error } = await supabase.from("menu_items").update(payload).eq("id", id);
   if (error) return showError(error);
   await loadAll();
 }
 
 async function moveItem(id, direction) {
+  if (!ensureAdmin()) return;
   const items = state.items.filter((item) => item.category_id === state.selectedCategoryId);
   const index = items.findIndex((item) => item.id === id);
   const target = items[index + direction];
@@ -321,6 +342,12 @@ async function moveItem(id, direction) {
 
 function showError(error) {
   window.alert(error.message ?? String(error));
+}
+
+function ensureAdmin() {
+  if (state.isAdmin) return true;
+  window.alert("CMS 관리자 권한이 필요합니다. 첫 관리자 설정 코드를 입력한 뒤 다시 시도하세요.");
+  return false;
 }
 
 function nullable(value) {
