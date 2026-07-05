@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stay With Coffee Menu</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+    <script src="config.js"></script>
+    <script type="module" src="assets/menu.js"></script>
+  </head>
+  <body class="public-page">
+    <header class="site-header">
+      <a class="brand" href="menu.html" aria-label="Stay With Coffee menu">
+        <span class="brand-mark">SWC</span>
+        <span>
+          <strong>Stay With Coffee</strong>
+          <small>Online Menu</small>
+        </span>
+      </a>
+      <a class="ghost-link" href="admin.html">Admin</a>
+    </header>
+
+    <main>
+      <section class="menu-hero">
+        <p class="eyebrow">Specialty Coffee Menu</p>
+        <h1>스테이위드커피 온라인 메뉴</h1>
+        <p>가격 단위는 천원이며, 표시된 메뉴는 현재 판매 중인 항목입니다.</p>
+      </section>
+
+      <nav id="categoryTabs" class="category-tabs" aria-label="메뉴 카테고리"></nav>
+      <section id="menuContent" class="menu-content" aria-live="polite">
+        <div class="empty-state">메뉴를 불러오는 중입니다.</div>
+      </section>
+    </main>
+  </body>
+</html>

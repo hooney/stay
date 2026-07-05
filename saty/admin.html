@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stay With Coffee Menu Admin</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+    <script src="config.js"></script>
+    <script type="module" src="assets/admin.js"></script>
+  </head>
+  <body class="admin-page">
+    <header class="site-header">
+      <a class="brand" href="menu.html">
+        <span class="brand-mark">SWC</span>
+        <span>
+          <strong>Menu CMS</strong>
+          <small>Stay With Coffee</small>
+        </span>
+      </a>
+      <div class="header-actions">
+        <a class="ghost-link" href="menu.html">메뉴 보기</a>
+        <button id="logoutButton" class="icon-button hidden" type="button" title="로그아웃" aria-label="로그아웃">⎋</button>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <section id="loginPanel" class="panel auth-panel">
+        <p class="eyebrow">Admin Login</p>
+        <h1>메뉴 관리</h1>
+        <form id="loginForm" class="stacked-form">
+          <label>
+            이메일
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            비밀번호
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">로그인</button>
+        </form>
+        <p id="loginMessage" class="form-message"></p>
+      </section>
+
+      <section id="cmsPanel" class="hidden">
+        <div class="toolbar">
+          <div>
+            <p class="eyebrow">Dashboard</p>
+            <h1>온라인 메뉴판 관리</h1>
+          </div>
+          <button id="newItemButton" type="button">메뉴 추가</button>
+        </div>
+
+        <div class="admin-grid">
+          <aside class="panel sidebar">
+            <div class="panel-heading">
+              <h2>카테고리</h2>
+              <button id="addCategoryButton" class="small-button" type="button">추가</button>
+            </div>
+            <div id="categoryList" class="category-list"></div>
+          </aside>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2 id="itemsTitle">메뉴</h2>
+              <span id="itemCount" class="muted"></span>
+            </div>
+            <div id="itemList" class="item-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="itemDialog" class="editor-dialog">
+      <form id="itemForm" method="dialog" class="editor-form">
+        <div class="dialog-heading">
+          <h2 id="itemDialogTitle">메뉴 편집</h2>
+          <button class="icon-button" type="button" data-close-dialog title="닫기" aria-label="닫기">×</button>
+        </div>
+        <input name="id" type="hidden" />
+        <div class="form-grid">
+          <label>카테고리<select name="category_id" required></select></label>
+          <label>코드<input name="code" placeholder="C1-1" /></label>
+          <label>한글 이름<input name="name_ko" required /></label>
+          <label>영문 이름<input name="name_en" /></label>
+          <label>가격<input name="price" type="number" min="0" step="0.1" required /></label>
+          <label>배전도<input name="roasting_point" /></label>
+          <label class="wide">요약<input name="summary" /></label>
+          <label class="wide">설명<textarea name="description" rows="5"></textarea></label>
+          <label>원산지<input name="origin" /></label>
+          <label>농장/농장주<input name="farm" /></label>
+          <label>고도<input name="altitude" /></label>
+          <label>품종<input name="variety" /></label>
+          <label>가공법<input name="processing" /></label>
+          <label>이미지 URL<input name="image_url" type="url" /></label>
+          <label class="wide">향미 노트<input name="flavor_notes" placeholder="자스민, 히비스커스, 오렌지" /></label>
+          <label class="checkbox-row"><input name="is_published" type="checkbox" checked /> 메뉴판에 노출</label>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="danger-button" id="deleteItemButton">삭제</button>
+          <span></span>
+          <button type="button" data-close-dialog>취소</button>
+          <button type="submit">저장</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
