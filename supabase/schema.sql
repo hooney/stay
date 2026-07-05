@@ -78,6 +78,35 @@ as $$
   );
 $$;
 
+create or replace function public.claim_cms_admin(setup_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  setup_hash constant text := '$2a$06$hnDHTeIud89auugeVO6e6u0bFl3w4RBlN3m2R7pZV0lt3kGiDW5JW';
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if exists (select 1 from public.cms_admins) then
+    raise exception 'Admin already configured';
+  end if;
+
+  if crypt(setup_code, setup_hash) <> setup_hash then
+    raise exception 'Invalid setup code';
+  end if;
+
+  insert into public.cms_admins (user_id)
+  values (auth.uid())
+  on conflict (user_id) do nothing;
+
+  return true;
+end;
+$$;
+
 alter table public.cms_admins enable row level security;
 alter table public.menu_categories enable row level security;
 alter table public.menu_items enable row level security;

@@ -38,10 +38,24 @@
           </label>
           <button type="submit">로그인</button>
         </form>
+        <button id="signupButton" class="secondary-button" type="button">관리자 계정 만들기</button>
         <p id="loginMessage" class="form-message"></p>
       </section>
 
       <section id="cmsPanel" class="hidden">
+        <section id="setupPanel" class="panel setup-panel hidden">
+          <p class="eyebrow">First Admin</p>
+          <h2>첫 관리자 설정</h2>
+          <form id="setupForm" class="stacked-form">
+            <label>
+              Setup code
+              <input name="setup_code" type="password" autocomplete="one-time-code" required />
+            </label>
+            <button type="submit">관리자 권한 받기</button>
+          </form>
+          <p id="setupMessage" class="form-message"></p>
+        </section>
+
         <div class="toolbar">
           <div>
             <p class="eyebrow">Dashboard</p>

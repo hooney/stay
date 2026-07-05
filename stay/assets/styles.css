@@ -397,6 +397,7 @@ textarea {
 .small-button,
 .drag-button,
 .icon-button,
+.secondary-button,
 .danger-button,
 .dialog-actions button[data-close-dialog] {
   border: 1px solid var(--line);
@@ -464,6 +465,10 @@ textarea {
   padding: 28px;
   color: var(--muted);
   text-align: center;
+}
+
+.setup-panel {
+  margin-bottom: 18px;
 }
 
 .hidden {

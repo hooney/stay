@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Stay With Coffee Menu Admin</title>
-    <link rel="stylesheet" href="../assets/styles.css" />
-    <script src="../config.js"></script>
-    <script type="module" src="../assets/admin.js"></script>
+    <link rel="stylesheet" href="assets/styles.css" />
+    <script src="config.js"></script>
+    <script type="module" src="assets/admin.js"></script>
   </head>
   <body class="admin-page">
     <header class="site-header">
-      <a class="brand" href="./">
+      <a class="brand" href="menu.html">
         <span class="brand-mark">SWC</span>
         <span>
           <strong>Menu CMS</strong>
@@ -18,7 +18,7 @@
         </span>
       </a>
       <div class="header-actions">
-        <a class="ghost-link" href="./">메뉴 보기</a>
+        <a class="ghost-link" href="menu.html">메뉴 보기</a>
         <button id="logoutButton" class="icon-button hidden" type="button" title="로그아웃" aria-label="로그아웃">⎋</button>
       </div>
     </header>
@@ -38,10 +38,24 @@
           </label>
           <button type="submit">로그인</button>
         </form>
+        <button id="signupButton" class="secondary-button" type="button">관리자 계정 만들기</button>
         <p id="loginMessage" class="form-message"></p>
       </section>
 
       <section id="cmsPanel" class="hidden">
+        <section id="setupPanel" class="panel setup-panel hidden">
+          <p class="eyebrow">First Admin</p>
+          <h2>첫 관리자 설정</h2>
+          <form id="setupForm" class="stacked-form">
+            <label>
+              Setup code
+              <input name="setup_code" type="password" autocomplete="one-time-code" required />
+            </label>
+            <button type="submit">관리자 권한 받기</button>
+          </form>
+          <p id="setupMessage" class="form-message"></p>
+        </section>
+
         <div class="toolbar">
           <div>
             <p class="eyebrow">Dashboard</p>

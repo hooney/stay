@@ -13,12 +13,16 @@ const cmsPanel = document.querySelector("#cmsPanel");
 const loginForm = document.querySelector("#loginForm");
 const loginMessage = document.querySelector("#loginMessage");
 const logoutButton = document.querySelector("#logoutButton");
+const signupButton = document.querySelector("#signupButton");
 const categoryList = document.querySelector("#categoryList");
 const itemList = document.querySelector("#itemList");
 const itemsTitle = document.querySelector("#itemsTitle");
 const itemCount = document.querySelector("#itemCount");
 const addCategoryButton = document.querySelector("#addCategoryButton");
 const newItemButton = document.querySelector("#newItemButton");
+const setupPanel = document.querySelector("#setupPanel");
+const setupForm = document.querySelector("#setupForm");
+const setupMessage = document.querySelector("#setupMessage");
 const itemDialog = document.querySelector("#itemDialog");
 const itemForm = document.querySelector("#itemForm");
 const deleteItemButton = document.querySelector("#deleteItemButton");
@@ -49,6 +53,8 @@ async function init() {
 
 function bindEvents() {
   loginForm.addEventListener("submit", onLogin);
+  signupButton.addEventListener("click", onSignup);
+  setupForm.addEventListener("submit", onClaimAdmin);
   logoutButton.addEventListener("click", () => supabase.auth.signOut());
   addCategoryButton.addEventListener("click", onAddCategory);
   newItemButton.addEventListener("click", () => openItemDialog());
@@ -76,6 +82,41 @@ async function onLogin(event) {
   loginForm.reset();
 }
 
+async function onSignup() {
+  loginMessage.textContent = "";
+  const formData = new FormData(loginForm);
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!email || !password) {
+    loginMessage.textContent = "이메일과 비밀번호를 입력한 뒤 계정을 만드세요.";
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (error) {
+    loginMessage.textContent = error.message;
+    return;
+  }
+
+  loginMessage.textContent = "계정이 생성되었습니다. 이메일 확인이 필요하면 받은 편지함을 확인한 뒤 로그인하세요.";
+}
+
+async function onClaimAdmin(event) {
+  event.preventDefault();
+  setupMessage.textContent = "";
+  const setupCode = new FormData(setupForm).get("setup_code");
+  const { error } = await supabase.rpc("claim_cms_admin", { setup_code: setupCode });
+
+  if (error) {
+    setupMessage.textContent = error.message;
+    return;
+  }
+
+  setupForm.reset();
+  await loadAll();
+}
+
 function updateAuthUI(isSignedIn) {
   loginPanel.classList.toggle("hidden", isSignedIn);
   cmsPanel.classList.toggle("hidden", !isSignedIn);
@@ -94,8 +135,14 @@ async function loadAll() {
   state.categories = categoriesResult.data ?? [];
   state.items = itemsResult.data ?? [];
   state.selectedCategoryId ||= state.categories[0]?.id ?? null;
+  await renderSetupPanel();
   renderCategories();
   renderItems();
+}
+
+async function renderSetupPanel() {
+  const { data, error } = await supabase.rpc("is_cms_admin");
+  setupPanel.classList.toggle("hidden", Boolean(data) || Boolean(error));
 }
 
 function renderCategories() {
